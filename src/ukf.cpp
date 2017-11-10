@@ -213,38 +213,6 @@ void UKF::Prediction(double delta_t) {
 	}
 }
 
-std::tuple<MatrixXd, VectorXd> UKF::PredictZ(int n_z)
-{
-  //create matrix for sigma points in measurement space
-	MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug_ + 1);
-  //transform sigma points into measurement space
-	for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
-
-											   // extract values for better readibility
-		double p_x = Xsig_pred_(0, i);
-		double p_y = Xsig_pred_(1, i);
-		double v = Xsig_pred_(2, i);
-		double yaw = Xsig_pred_(3, i);
-
-		double v1 = cos(yaw)*v;
-		double v2 = sin(yaw)*v;
-
-		// measurement model
-		Zsig(0, i) = sqrt(p_x*p_x + p_y*p_y);                        //r
-		Zsig(1, i) = atan2(p_y, p_x);                                 //phi
-		Zsig(2, i) = (p_x*v1 + p_y*v2) / sqrt(p_x*p_x + p_y*p_y);   //r_dot
-	}
-
-//mean predicted measurement
-  VectorXd z_pred = VectorXd(n_z);
-  z_pred.fill(0.0);
-  for (int i=0; i < 2*n_aug_+1; i++) {
-      z_pred = z_pred + weights_(i) * Zsig.col(i);
-    }
-    
-  return std::make_tuple(Zsig, z_pred);;
-}
-
 /**
  * Updates the state and the state covariance matrix using a laser measurement.
  * @param {MeasurementPackage} meas_package
@@ -261,11 +229,32 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
   VectorXd z = meas_package.raw_measurements_;
 	//set measurement dimension, radar can measure r, phi, and r_dot
-  //mean predicted measurement
-  const int n_z = 2;
-  VectorXd z_pred;
-  MatrixXd Zsig;
-  std::tie(Zsig, z_pred) = PredictZ(n_z);
+	int n_z = 2;
+	//create matrix for sigma points in measurement space
+	MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug_ + 1);
+	//transform sigma points into measurement space
+	for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
+
+												// extract values for better readibility
+		double p_x = Xsig_pred_(0, i);
+		double p_y = Xsig_pred_(1, i);
+		double v = Xsig_pred_(2, i);
+		double yaw = Xsig_pred_(3, i);
+
+		double v1 = cos(yaw)*v;
+		double v2 = sin(yaw)*v;
+
+		// measurement model
+		Zsig(0, i) = p_x;
+		Zsig(1, i) = p_y;
+	}
+
+	//mean predicted measurement
+	VectorXd z_pred = VectorXd(n_z);
+	z_pred.fill(0.0);
+	for (int i = 0; i < 2 * n_aug_ + 1; i++) {
+		z_pred = z_pred + weights_(i) * Zsig.col(i);
+	}
 
 	//measurement covariance matrix S
 	MatrixXd S = MatrixXd(n_z, n_z);
@@ -328,10 +317,34 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   */
   
   VectorXd z = meas_package.raw_measurements_;
-  const int n_z = 3;
-  VectorXd z_pred;
-  MatrixXd Zsig;
-  std::tie(Zsig, z_pred) = PredictZ(n_z);
+  //set measurement dimension, radar can measure r, phi, and r_dot
+	int n_z = 3;
+  //create matrix for sigma points in measurement space
+	MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug_ + 1);
+  //transform sigma points into measurement space
+	for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
+
+											   // extract values for better readibility
+		double p_x = Xsig_pred_(0, i);
+		double p_y = Xsig_pred_(1, i);
+		double v = Xsig_pred_(2, i);
+		double yaw = Xsig_pred_(3, i);
+
+		double v1 = cos(yaw)*v;
+		double v2 = sin(yaw)*v;
+
+		// measurement model
+		Zsig(0, i) = sqrt(p_x*p_x + p_y*p_y);                        //r
+		Zsig(1, i) = atan2(p_y, p_x);                                 //phi
+		Zsig(2, i) = (p_x*v1 + p_y*v2) / sqrt(p_x*p_x + p_y*p_y);   //r_dot
+	}
+
+//mean predicted measurement
+  VectorXd z_pred = VectorXd(n_z);
+  z_pred.fill(0.0);
+  for (int i=0; i < 2*n_aug_+1; i++) {
+      z_pred = z_pred + weights_(i) * Zsig.col(i);
+  }
 
   //measurement covariance matrix S
   MatrixXd S = MatrixXd(n_z,n_z);
