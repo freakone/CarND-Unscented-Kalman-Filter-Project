@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <tuple>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -102,6 +103,9 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+
+private:
+  std::tuple<MatrixXd, VectorXd> PredictZ(int n_z);
 };
 
 #endif /* UKF_H */
